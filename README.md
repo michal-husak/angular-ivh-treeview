@@ -73,6 +73,16 @@ selection model. If you'd rather not have these checkboxes use
 </div>
 ```
 
+If you don't want a default functionality, when a parent node can't be selected alone without selection of any of it's own children, then use
+`can-be-selected-with-no-children="true"`:
+
+```html
+<div ng-controller="MyCtrl as fancy">
+  <div ivh-treeview="fancy.bag"
+    can-be-selected-with-no-children="true">
+</div>
+```
+
 There's also a provider if you'd like to change the global defaults:
 
 ```javascript
@@ -89,7 +99,8 @@ app.config(function(ivhTreeviewOptionsProvider) {
     validate: true,
     twistieExpandedTpl: '(-)',
     twistieCollapsedTpl: '(+)',
-    twistieLeafTpl: 'o'
+    twistieLeafTpl: 'o',
+    canBeSelectedWithNoChildren: false
   });
 });
 ```

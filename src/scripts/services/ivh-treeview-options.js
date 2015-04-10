@@ -50,6 +50,14 @@ angular.module('ivh.treeview').provider('ivhTreeviewOptions', function() {
     useCheckboxes: true,
 
     /**
+     * Whether or not is the parent node automatically selected even if all of it's children are unselected
+     *
+     * If `true` then the parent node can be selected, when none of it's own children is selected
+     * or when at least one of it's children is selected, then the parent node isn't automatically selected
+     */
+    canBeSelectedWithNoChildren: false,
+
+    /**
      * Whether or not directive should validate treestore on startup
      *
      * Must opt-in.

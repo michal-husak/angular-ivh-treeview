@@ -126,7 +126,9 @@ angular.module('ivh.treeview')
             makeDeselected.bind(opts);
 
           ivhTreeviewBfs(n, opts, cb);
-          ng.forEach(p, validateParent.bind(opts));
+          if(!opts.canBeSelectedWithNoChildren) {
+              ng.forEach(p, validateParent.bind(opts));
+          }
         }
 
         return proceed;

@@ -42,6 +42,7 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       useCheckboxes: '=ivhTreeviewUseCheckboxes',
       validate: '=ivhTreeviewValidate',
       visibleAttribute: '=ivhTreeviewVisibleAttribute',
+      canBeSelectedWithNoChildren: '=canBeSelectedWithNoChildren',
 
       // Generic options object
       userOptions: '=ivhTreeviewOptions',
@@ -72,7 +73,8 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
         'twistieLeafTpl',
         'useCheckboxes',
         'validate',
-        'visibleAttribute'
+        'visibleAttribute',
+        'canBeSelectedWithNoChildren'
       ], function(attr) {
         if(ng.isDefined($scope[attr])) {
           localOpts[attr] = $scope[attr];
@@ -123,6 +125,10 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
 
       ctrl.useCheckboxes = function() {
         return localOpts.useCheckboxes;
+      };
+
+      ctrl.canBeSelectedWithNoChildren = function() {
+          return localOpts.canBeSelectedWithNoChildren;
       };
 
       ctrl.select = function(node, isSelected) {
