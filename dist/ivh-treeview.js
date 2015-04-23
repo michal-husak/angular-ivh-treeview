@@ -199,9 +199,8 @@ angular.module('ivh.treeview').directive('ivhTreeviewTwistie', ['$compile', 'ivh
     ].join('\n'),
     link: function(scope, element, attrs, ctrl) {
 
-      if(!ctrl.hasLocalTwistieTpls) {
-        return;
-      }
+      // Should this be opt-in only? Seems like a ton of extra cycles for a
+      // feature that won't be used super often.
 
       var opts = ctrl.opts()
         , $twistieContainers = element
@@ -284,6 +283,7 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       useCheckboxes: '=ivhTreeviewUseCheckboxes',
       validate: '=ivhTreeviewValidate',
       visibleAttribute: '=ivhTreeviewVisibleAttribute',
+      canBeSelectedWithNoChildren: '=canBeSelectedWithNoChildren',
 
       // Generic options object
       userOptions: '=ivhTreeviewOptions',
@@ -314,7 +314,8 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
         'twistieLeafTpl',
         'useCheckboxes',
         'validate',
-        'visibleAttribute'
+        'visibleAttribute',
+        'canBeSelectedWithNoChildren'
       ], function(attr) {
         if(ng.isDefined($scope[attr])) {
           localOpts[attr] = $scope[attr];
@@ -325,18 +326,6 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       ctrl.opts = function() {
         return localOpts;
       };
-
-      // If we didn't provide twistie templates we'll be doing a fair bit of
-      // extra checks for no reason. Let's just inform down stream directives
-      // whether or not they need to worry about twistie non-global templates.
-      var userOpts = $scope.userOptions || {};
-      ctrl.hasLocalTwistieTpls = !!(
-        userOpts.twistieCollapsedTpl ||
-        userOpts.twistieExpandedTpl ||
-        userOpts.twistieLeafTpl ||
-        $scope.twistieCollapsedTpl ||
-        $scope.twistieExpandedTpl ||
-        $scope.twistieLeafTpl);
 
       ctrl.children = function(node) {
         var children = node[localOpts.childrenAttribute];
@@ -365,6 +354,10 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
 
       ctrl.useCheckboxes = function() {
         return localOpts.useCheckboxes;
+      };
+
+      ctrl.canBeSelectedWithNoChildren = function() {
+          return localOpts.canBeSelectedWithNoChildren;
       };
 
       ctrl.select = function(node, isSelected) {
@@ -683,7 +676,9 @@ angular.module('ivh.treeview')
             makeDeselected.bind(opts);
 
           ivhTreeviewBfs(n, opts, cb);
-          ng.forEach(p, validateParent.bind(opts));
+          if(!opts.canBeSelectedWithNoChildren) {
+              ng.forEach(p, validateParent.bind(opts));
+          }
         }
 
         return proceed;
@@ -1046,6 +1041,14 @@ angular.module('ivh.treeview').provider('ivhTreeviewOptions', function() {
      * directive.
      */
     useCheckboxes: true,
+
+    /**
+       * Whether or not is the parent node automatically selected even if all of it's children are unselected 
+       *
+       * If `true` then the parent node can be selected, when none of it's own children is selected 
+       * or when at least one of it's children is selected, then the parent node isn't automatically selected   
+    */
+    canBeSelectedWithNoChildren: false,
 
     /**
      * Whether or not directive should validate treestore on startup
