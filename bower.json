@@ -15,7 +15,7 @@
     "treeview"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/ivantage/angular-ivh-treeview",
+  "homepage": "https://github.com/michal-husak/angular-ivh-treeview",
   "ignore": [
     "**/.*",
     "node_modules",
