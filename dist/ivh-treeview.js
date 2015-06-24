@@ -308,6 +308,8 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       useCheckboxes: '=ivhTreeviewUseCheckboxes',
       validate: '=ivhTreeviewValidate',
       visibleAttribute: '=ivhTreeviewVisibleAttribute',
+      canBeSelectedWithNoChildren: '=canBeSelectedWithNoChildren',
+      dontAllowUncheckIfParentIsChecked: '=dontAllowUncheckIfParentIsChecked',
 
       // Generic options object
       userOptions: '=ivhTreeviewOptions',
@@ -339,7 +341,9 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
         'twistieLeafTpl',
         'useCheckboxes',
         'validate',
-        'visibleAttribute'
+        'visibleAttribute',
+        'canBeSelectedWithNoChildren',
+        'dontAllowUncheckIfParentIsChecked'
       ], function(attr) {
         if(ng.isDefined($scope[attr])) {
           localOpts[attr] = $scope[attr];
@@ -464,6 +468,14 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
        */
       trvw.useCheckboxes = function() {
         return localOpts.useCheckboxes;
+      };
+
+      trvw.canBeSelectedWithNoChildren = function () {
+                return localOpts.canBeSelectedWithNoChildren;
+      };
+
+      trvw.dontAllowUncheckIfParentIsChecked = function () {
+          return localOpts.dontAllowUncheckIfParentIsChecked;
       };
 
       /**
@@ -878,8 +890,24 @@ angular.module('ivh.treeview')
             makeSelected.bind(opts) :
             makeDeselected.bind(opts);
 
-          ivhTreeviewBfs(n, opts, cb);
-          ng.forEach(p, validateParent.bind(opts));
+          var selectedAttr = opts.selectedAttribute
+                        , indeterminateAttr = opts.indeterminateAttribute;
+
+          if (opts.dontAllowUncheckIfParentIsChecked) {
+              if ((p.length > 0 && !p[0][selectedAttr]) || p.length == 0) {
+                  ivhTreeviewBfs(n, opts, cb);
+                  if (!opts.canBeSelectedWithNoChildren) {
+                      ng.forEach(p, validateParent.bind(opts));
+                  }
+              } else {
+                  // TODO tu sa strati binding na node
+              }
+          } else {
+              ivhTreeviewBfs(n, opts, cb);
+              if (!opts.canBeSelectedWithNoChildren) {
+                  ng.forEach(p, validateParent.bind(opts));
+              }
+          }
         }
 
         return proceed;
@@ -1242,6 +1270,16 @@ angular.module('ivh.treeview').provider('ivhTreeviewOptions', function() {
      * directive.
      */
     useCheckboxes: true,
+
+    /**
+     * Whether or not is the parent node automatically selected even if all of it's children are unselected
+     *
+     * If `true` then the parent node can be selected, when none of it's own children is selected
+     * or when at least one of it's children is selected, then the parent node isn't automatically selected
+     */
+    canBeSelectedWithNoChildren: false,
+
+    dontAllowUncheckIfParentIsChecked: false,
 
     /**
      * Whether or not directive should validate treestore on startup
