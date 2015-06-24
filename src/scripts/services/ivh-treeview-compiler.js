@@ -1,6 +1,9 @@
 
 /**
- * Treeview tree node directive
+ * Compile helper for treeview nodes
+ *
+ * Defers compilation until after linking parents. Otherwise our treeview
+ * compilation process would recurse indefinitely.
  *
  * Thanks to http://stackoverflow.com/questions/14430655/recursion-in-angular-directives
  *
@@ -9,7 +12,7 @@
  * @copyright 2014 iVantage Health Analytics, Inc.
  */
 
-angular.module('ivh.treeview').factory('ivhTreeviewCompiler', ['$compile', function($compile){
+angular.module('ivh.treeview').factory('ivhTreeviewCompiler', ['$compile', function($compile) {
   'use strict';
   return {
     /**
@@ -18,32 +21,32 @@ angular.module('ivh.treeview').factory('ivhTreeviewCompiler', ['$compile', funct
      * @param {Function} link [optional] A post-link function, or an object with function(s) registered via pre and post properties.
      * @returns An object containing the linking functions.
      */
-    compile: function(element, link){
+    compile: function(element, link) {
       // Normalize the link parameter
-      if(angular.isFunction(link)){
+      if(angular.isFunction(link)) {
         link = { post: link };
       }
 
       // Break the recursion loop by removing the contents
-      var contents = element.contents().remove();
+      element.contents().remove();
       var compiledContents;
       return {
         pre: (link && link.pre) ? link.pre : null,
         /**
          * Compiles and re-adds the contents
          */
-        post: function(scope, element){
-          // Compile the contents
-          if(!compiledContents){
-            compiledContents = $compile(contents);
+        post: function(scope, element, attrs, trvw) {
+          // Compile our template
+          if(!compiledContents) {
+            compiledContents = $compile(trvw.getNodeTpl());
           }
-          // Re-add the compiled contents to the element
-          compiledContents(scope, function(clone){
+          // Add the compiled template
+          compiledContents(scope, function(clone) {
             element.append(clone);
           });
 
           // Call the post-linking function, if any
-          if(link && link.post){
+          if(link && link.post) {
             link.post.apply(null, arguments);
           }
         }

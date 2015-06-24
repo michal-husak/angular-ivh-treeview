@@ -73,16 +73,6 @@ selection model. If you'd rather not have these checkboxes use
 </div>
 ```
 
-If you don't want a default functionality, when a parent node can't be selected alone without selection of any of it's own children, then use
-`can-be-selected-with-no-children="true"`:
-
-```html
-<div ng-controller="MyCtrl as fancy">
-  <div ivh-treeview="fancy.bag"
-    can-be-selected-with-no-children="true">
-</div>
-```
-
 There's also a provider if you'd like to change the global defaults:
 
 ```javascript
@@ -100,7 +90,7 @@ app.config(function(ivhTreeviewOptionsProvider) {
     twistieExpandedTpl: '(-)',
     twistieCollapsedTpl: '(+)',
     twistieLeafTpl: 'o',
-    canBeSelectedWithNoChildren: false
+    nodeTpl: '...'
   });
 });
 ```
@@ -126,7 +116,7 @@ If you want the tree to start out expanded to a certain depth use the
 </div>
 ```
 
-You can also sue the `ivhTreeviewOptionsProvider` to set a global default.
+You can also use the `ivhTreeviewOptionsProvider` to set a global default.
 
 If you want the tree *entirely* expanded use a depth of `-1`.
 
@@ -182,12 +172,136 @@ object](https://github.com/iVantage/angular-ivh-treeview#all-the-options).
 
 ***Demo***: [Custom twisties](http://jsbin.com/gizofu/edit?html,js,output)
 
+### Tree Node Templates
+
+##### Global Templates
+
+Tree node templates can be set globally using the `nodeTpl`  options:
+
+```
+app.config(function(ivhTreeviewOptionsProvider) {
+  ivhTreeviewOptionsProvider.set({
+    nodeTpl: '<custom-template></custom-template>'
+  });
+});
+```
+
+##### Inline Templates
+
+Want different node templates for different trees? This can be accomplished
+using inline templates. Inline templates can be specified in any of three ways:
+
+With the `ivh-treeview-node-tpl` attribute:
+
+```
+<div ivh-treeview="fancy.bag"
+     ivh-treeview-node-tpl="variableWithTplAsString"></div>
+```
+
+As a property in the `ivh-treeview-options` object:
+
+```
+<div ivh-treeview="fancy.bag"
+     ivh-treeview-options="{nodeTpl: variableWithTplAsString}"></div>
+```
+
+Or as transcluded content in the treeview directive itself:
+
+```
+<div ivh-treeview="fancy.bag">
+  <scsript type="text/ng-template">
+    <div title="{{trvw.label(node)}}">
+      <span ivh-treeview-toggle>
+        <span ivh-treeview-twistie></span>
+      </span>
+      <span ng-if="trvw.useCheckboxes()" ivh-treeview-checkbox>
+      </span>
+     <span class="ivh-treeview-node-label" ivh-treeview-toggle>
+       {{trvw.label(node)}}
+     </span>
+     <div ivh-treeview-children></div>
+   </div>
+  </scsript>
+</div>
+```
+
+Note the use of the ng-template script tag wrapping the rest of the transcluded
+content, this wrapper is a mandatory. Also note that this form is intended to
+serve as a convenient and declarative way to essentially provide a template
+string to your treeview. The template itself does not (currently) have access a
+transcluded scope.
+
+
+##### Template Helper Directives
+
+You have access to a number of helper directives when building your node
+templates. These are mostly optional but should make your life a bit easier, not
+that all support both element and attribute level usage:
+
+- `ivh-treeview-toggle` (*attribute*) Clicking this element will expand or
+  collapse the tree node if it is not a leaf.
+- `ivh-treeview-twistie` (*attribute*) Display as either an "expanded" or
+  "collapsed" twistie as appropriate.
+- `ivh-treeview-checkbox` (*attribute*|*element*) A checkbox that is "plugged
+  in" to the treeview.  It will reflect your node's selected state and update
+  parents and children appropriately out of the box.
+- `ivh-treeview-children` (*attribute*|*element*) The recursive step. If you
+  want your tree to display more than one level of nodes you will need to place
+  this some where, or have your own way of getting child nodes into the view.
+
+#### Supported Template Scope Variables
+
+**`node`**
+
+A reference to the tree node itself. Note that in general you should use
+controller helper methods to access node properties when possible.
+
+**`trvw`**
+
+A reference to the treeview controller with a number of useful properties and
+helper functions:
+
+- `trvw.select(Object node[, Boolean isSelected])` <br>
+  Set the seleted state of `node` to `isSelected`. The will update parent and
+  child node selected states appropriately. `isSelected` defaults to `true`.
+- `trvw.isSelected(Object node) -> Boolean` <br>
+  Returns `true` if `node` is selected and `false` otherwise.
+- `trvw.toggleSelected(Object node)` <br>
+  Toggles the selected state of `node`. This will update parent and child note
+  selected states appropriately.
+- `trvw.expand(Object node[, Boolean isExpanded])` <br>
+  Set the expanded state of `node` to `isExpanded`, i.e. expand or collapse
+  `node`. `isExpanded` defaults to `true`.
+- `trvw.isExpanded(Object node) --> Boolean` <br>
+  Returns `true` if `node` is expanded and `false` otherwise.
+- `trvw.toggleExpanded(Object node)` <br>
+  Toggle the expanded state of `node`.
+- `trvw.isLeaf(Object node) --> Boolean` <br>
+  Returns `true` if `node` is a leaf node in the tree and `false` otherwise.
+- `trvw.label(Object node) --> String` <br>
+  Returns the label attribute of `node` as determined by the `labelAttribute`
+  treeview option.
+- `trvw.children(Object node) --> Array` <br>
+  Returns the array of children for `node`. Returns an empty array if `node` has
+  no children or the `childrenAttribute` property value is not defined.
+- `trvw.opts() --> Object` <br>
+  Returns a merged version of the global and local options.
+- `trvw.isVisible(Object node) --> Boolean` <br>
+  Returns `true` if `node` should be considered visible under the current
+  **filter** and `false` otherwise. Note that this only relates to treeview
+  filters and does not take into account whether or not `node` can actually be
+  seen as a result of expanded/collapsed parents.
+- `trvw.useCheckboxes() --> Boolean` <br>
+  Returns `true` if checkboxes should be used in the template and `false`
+  otherwise.
+
+
 ### Custom onClick Handlers
 
 Want to register a callback for whenever a tree node gets clicked? Use the
 `ivh-treeview-click-handler` attribute, the passed function will get called
-whenever the user clicks on a twistie or node label. Your callback will be passed
-a reference to the node and the three that node belongs to.
+whenever the user clicks on a twistie or node label. Your callback will be
+passed a reference to the node and the three that node belongs to.
 
 ```html
 <div ng-controller="MyCtrl as fancy">
@@ -392,8 +506,15 @@ many changes as necessary to demonstrate your issue but do comment your added
 code.
 
 
+## Contributing
+
+Please see our consolidated [contribution
+guidelines](https://github.com/iVantage/Contribution-Guidelines).
+
+
 ## Release history
 
+- 2015-05-06 v0.10.0 Make node templates customizable
 - 2015-02-10 v0.9.0 All options are set-able via attributes or config object
 - 2015-01-02 v0.8.0 Add ability to expand/collapse nodes programmatically
 - 2014-09-21 v0.6.0 Tree accepts nodes added on the fly

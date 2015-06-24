@@ -14,16 +14,15 @@ angular.module('ivh.treeview').directive('ivhTreeviewToggle', [function() {
   return {
     restrict: 'A',
     require: '^ivhTreeview',
-    link: function(scope, element, attrs, ctrl) {
-      var node = scope.node
-        , children = ctrl.children(node);
+    link: function(scope, element, attrs, trvw) {
+      var node = scope.node;
 
       element.addClass('ivh-treeview-toggle');
 
       element.bind('click', function() {
         scope.$apply(function() {
-          ctrl.onNodeClick(node);
-          ctrl.toggleExpanded(node);
+          trvw.onNodeClick(node);
+          trvw.toggleExpanded(node);
         });
       });
     }

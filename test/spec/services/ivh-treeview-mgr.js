@@ -33,17 +33,17 @@ describe('Service: ivhTreeviewMgr', function() {
         children: [{
           label: 'Fedora',
           id: 'fedora'
-        },{
+        }, {
           label: 'Flatcap',
           id: 'flatcap'
         }]
-      },{
+      }, {
         label: 'Bags',
         id: 'bags',
         children: [{
           label: 'Messenger',
           id: 'messenger'
-        },{
+        }, {
           label: 'Backpack',
           id: 'backpack'
         }]
@@ -232,7 +232,7 @@ describe('Service: ivhTreeviewMgr', function() {
       });
 
       ivhTreeviewMgr.expand(tree, bags);
-      
+
       angular.forEach(nodes, function(n) {
         expect(n.__ivhTreeviewExpanded).toBe(n === bags);
       });
@@ -244,7 +244,7 @@ describe('Service: ivhTreeviewMgr', function() {
       });
 
       ivhTreeviewMgr.expand(tree, 'bags');
-      
+
       angular.forEach(nodes, function(n) {
         expect(n.__ivhTreeviewExpanded).toBe(n === bags);
       });
@@ -252,6 +252,12 @@ describe('Service: ivhTreeviewMgr', function() {
 
     it('should return ivhTreeviewMgr for chaining', function() {
       expect(ivhTreeviewMgr.expand(tree, bags)).toBe(ivhTreeviewMgr);
+    });
+
+    it('should honor local options for the is-expanded attribute', function() {
+      ivhTreeviewMgr.expand(tree, bags, {expandedAttribute: 'expanded'}, true);
+      expect(bags.expanded).toBe(true);
+      expect(bags.__ivhTreeviewExpanded).toBeUndefined();
     });
 
   });
@@ -389,7 +395,7 @@ describe('Service: ivhTreeviewMgr', function() {
   });
 
   describe('#expandTo', function() {
-    
+
     it('should be able to expand all *parents* of a given node', function() {
       angular.forEach(nodes, function(n) {
         n.__ivhTreeviewExpanded = false;
@@ -425,7 +431,7 @@ describe('Service: ivhTreeviewMgr', function() {
   });
 
   describe('#collapseParents', function() {
-    
+
     it('should be able to collapse all *parents* of a given node', function() {
       angular.forEach(nodes, function(n) {
         n.__ivhTreeviewExpanded = true;

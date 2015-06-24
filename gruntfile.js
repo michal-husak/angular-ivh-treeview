@@ -16,6 +16,33 @@ module.exports = function(grunt) {
       test: 'test/**/*.js'
     },
 
+    jscs: {
+      options: {
+        config: '.jscsrc'
+      },
+      gruntfile: {
+        files: {
+          src: [
+            'gruntfile.js'
+          ]
+        }
+      },
+      spec: {
+        files: {
+          src: [
+            'test/spec/**/*.js'
+          ]
+        }
+      },
+      scripts: {
+        files: {
+          src: [
+            'src/scripts/**/*.js'
+          ]
+        }
+      }
+    },
+
     clean: {
       dist: 'dist'
     },
@@ -57,6 +84,7 @@ module.exports = function(grunt) {
         src: ['src/scripts/*.js', 'src/scripts/**/*.js'],
         options: {
           specs: 'test/spec/**/*.js',
+          summary: true,
           vendor: [
             'bower_components/jquery/dist/jquery.js',
             'bower_components/angular/angular.js',
@@ -96,6 +124,7 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [
     'jshint',
+    'jscs',
     'jasmine'
   ]);
 

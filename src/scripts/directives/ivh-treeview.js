@@ -21,6 +21,7 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
   'use strict';
   return {
     restrict: 'A',
+    transclude: true,
     scope: {
       // The tree data store
       root: '=ivhTreeview',
@@ -35,6 +36,7 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       indeterminateAttribute: '=ivhTreeviewIndeterminateAttribute',
       expandedAttribute: '=ivhTreeviewExpandedAttribute',
       labelAttribute: '=ivhTreeviewLabelAttribute',
+      nodeTpl: '=ivhTreeviewNodeTpl',
       selectedAttribute: '=ivhTreeviewSelectedAttribute',
       twistieCollapsedTpl: '=ivhTreeviewTwistieCollapsedTpl',
       twistieExpandedTpl: '=ivhTreeviewTwistieExpandedTpl',
@@ -42,7 +44,6 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       useCheckboxes: '=ivhTreeviewUseCheckboxes',
       validate: '=ivhTreeviewValidate',
       visibleAttribute: '=ivhTreeviewVisibleAttribute',
-      canBeSelectedWithNoChildren: '=canBeSelectedWithNoChildren',
 
       // Generic options object
       userOptions: '=ivhTreeviewOptions',
@@ -50,10 +51,10 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       // The filter
       filter: '=ivhTreeviewFilter'
     },
-    controllerAs: 'ctrl',
+    controllerAs: 'trvw',
     controller: ['$scope', '$element', '$attrs', '$transclude', 'ivhTreeviewOptions', 'filterFilter', function($scope, $element, $attrs, $transclude, ivhTreeviewOptions, filterFilter) {
       var ng = angular
-        , ctrl = this;
+        , trvw = this;
 
       // Merge any locally set options with those registered with hte
       // ivhTreeviewOptions provider
@@ -67,22 +68,39 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
         'indeterminateAttribute',
         'expandedAttribute',
         'labelAttribute',
+        'nodeTpl',
         'selectedAttribute',
         'twistieCollapsedTpl',
         'twistieExpandedTpl',
         'twistieLeafTpl',
         'useCheckboxes',
         'validate',
-        'visibleAttribute',
-        'canBeSelectedWithNoChildren'
+        'visibleAttribute'
       ], function(attr) {
         if(ng.isDefined($scope[attr])) {
           localOpts[attr] = $scope[attr];
         }
       });
 
-      // Give child directives an easy way to get at merged options
-      ctrl.opts = function() {
+      // Treat the transcluded content (if there is any) as our node template
+      var transcludedScope;
+      $transclude(function(clone, scope) {
+        var transcludedNodeTpl = '';
+        angular.forEach(clone, function(c) {
+          transcludedNodeTpl += (c.innerHTML || '').trim();
+        });
+        if(transcludedNodeTpl.length) {
+          transcludedScope = scope;
+          localOpts.nodeTpl = transcludedNodeTpl;
+        }
+      });
+
+      /**
+       * Get the merged global and local options
+       *
+       * @return {Object} the merged options
+       */
+      trvw.opts = function() {
         return localOpts;
       };
 
@@ -90,7 +108,13 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
       // extra checks for no reason. Let's just inform down stream directives
       // whether or not they need to worry about twistie non-global templates.
       var userOpts = $scope.userOptions || {};
-      ctrl.hasLocalTwistieTpls = !!(
+
+      /**
+       * Whether or not we have local twistie templates
+       *
+       * @private
+       */
+      trvw.hasLocalTwistieTpls = !!(
         userOpts.twistieCollapsedTpl ||
         userOpts.twistieExpandedTpl ||
         userOpts.twistieLeafTpl ||
@@ -98,76 +122,216 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
         $scope.twistieExpandedTpl ||
         $scope.twistieLeafTpl);
 
-      ctrl.children = function(node) {
+      /**
+       * Get the child nodes for `node`
+       *
+       * Abstracts away the need to know the actual label attribute in
+       * templates.
+       *
+       * @param {Object} node a tree node
+       * @return {Array} the child nodes
+       */
+      trvw.children = function(node) {
         var children = node[localOpts.childrenAttribute];
         return ng.isArray(children) ? children : [];
       };
 
-      ctrl.label = function(node) {
+      /**
+       * Get the label for `node`
+       *
+       * Abstracts away the need to know the actual label attribute in
+       * templates.
+       *
+       * @param {Object} node A tree node
+       * @return {String} The node label
+       */
+      trvw.label = function(node) {
         return node[localOpts.labelAttribute];
       };
 
-      ctrl.hasFilter = function() {
+      /**
+       * Returns `true` if this treeview has a filter
+       *
+       * @return {Boolean} Whether on not we have a filter
+       * @private
+       */
+      trvw.hasFilter = function() {
         return ng.isDefined($scope.filter);
       };
 
-      ctrl.getFilter = function() {
+      /**
+       * Get the treeview filter
+       *
+       * @return {String} The filter string
+       * @private
+       */
+      trvw.getFilter = function() {
         return $scope.filter || '';
       };
 
-      ctrl.isVisible = function(node) {
-        var filter = ctrl.getFilter();
+      /**
+       * Get the tree node template
+       *
+       * @return {String} The node template
+       * @private
+       */
+      trvw.getNodeTpl = function() {
+        return localOpts.nodeTpl;
+      };
+
+      /**
+       * Returns `true` if current filter should hide `node`, false otherwise
+       *
+       * @param {Object} node A tree node
+       * @return {Boolean} Whether or not `node` is filtered out
+       */
+      trvw.isVisible = function(node) {
+        var filter = trvw.getFilter();
         if(!filter) {
           return true;
         }
         return !!filterFilter([node], filter).length;
       };
 
-      ctrl.useCheckboxes = function() {
+      /**
+       * Returns `true` if we should use checkboxes, false otherwise
+       *
+       * @return {Boolean} Whether or not to use checkboxes
+       */
+      trvw.useCheckboxes = function() {
         return localOpts.useCheckboxes;
       };
 
-      ctrl.canBeSelectedWithNoChildren = function() {
-          return localOpts.canBeSelectedWithNoChildren;
-      };
-
-      ctrl.select = function(node, isSelected) {
+      /**
+       * Select or deselect `node`
+       *
+       * Updates parent and child nodes appropriately, `isSelected` defaults to
+       * `true`.
+       *
+       * @param {Object} node The node to select or deselect
+       * @param {Boolean} isSelected Defaults to `true`
+       */
+      trvw.select = function(node, isSelected) {
         ivhTreeviewMgr.select($scope.root, node, localOpts, isSelected);
-        ctrl.onNodeChange(node, isSelected);
+        trvw.onNodeChange(node, isSelected);
       };
 
-      ctrl.expand = function(node, isExpanded) {
+      /**
+       * Get the selected state of `node`
+       *
+       * @param {Object} node The node to get the selected state of
+       * @return {Boolean} `true` if `node` is selected
+       */
+      trvw.isSelected = function(node) {
+        return node[localOpts.selectedAttribute];
+      };
+
+      /**
+       * Toggle the selected state of `node`
+       *
+       * Updates parent and child node selected states appropriately.
+       *
+       * @param {Object} node The node to update
+       */
+      trvw.toggleSelected = function(node) {
+        var isSelected = !node[localOpts.selectedAttribute];
+        trvw.select(node, isSelected);
+      };
+
+      /**
+       * Expand or collapse a given node
+       *
+       * `isExpanded` is optional and defaults to `true`.
+       *
+       * @param {Object} node The node to expand/collapse
+       * @param {Boolean} isExpanded Whether to expand (`true`) or collapse
+       */
+      trvw.expand = function(node, isExpanded) {
         ivhTreeviewMgr.expand($scope.root, node, localOpts, isExpanded);
       };
 
-      ctrl.isExpanded = function(node) {
+      /**
+       * Get the expanded state of a given node
+       *
+       * @param {Object} node The node to check the expanded state of
+       * @return {Boolean}
+       */
+      trvw.isExpanded = function(node) {
         return node[localOpts.expandedAttribute];
       };
 
-      ctrl.toggleExpanded = function(node) {
-        ctrl.expand(node, !ctrl.isExpanded(node));
+      /**
+       * Toggle the expanded state of a given node
+       *
+       * @param {Object} node The node to toggle
+       */
+      trvw.toggleExpanded = function(node) {
+        trvw.expand(node, !trvw.isExpanded(node));
       };
 
-      ctrl.isInitiallyExpanded = function(depth) {
+      /**
+       * Whether or not nodes at `depth` should be expanded by default
+       *
+       * Use -1 to fully expand the tree by default.
+       *
+       * @param {Integer} depth The depth to expand to
+       * @return {Boolean} Whether or not nodes at `depth` should be expanded
+       * @private
+       */
+      trvw.isInitiallyExpanded = function(depth) {
         var expandTo = localOpts.expandToDepth === -1 ?
           Infinity : localOpts.expandToDepth;
         return depth < expandTo;
       };
 
-      ctrl.isLeaf = function(node) {
-        return ctrl.children(node).length === 0;
+      /**
+       * Returns `true` if `node` is a leaf node
+       *
+       * @param {Object} node The node to check
+       * @return {Boolean} `true` if `node` is a leaf
+       */
+      trvw.isLeaf = function(node) {
+        return trvw.children(node).length === 0;
       };
 
-      ctrl.onNodeClick = function(node) {
+      /**
+       * Get the template to be used for tree nodes
+       *
+       * @return {String} The template
+       * @private
+       */
+      trvw.getNodeTpl = function() {
+        return localOpts.nodeTpl;
+      };
+
+      /**
+       * Call the registered node click handler
+       *
+       * Handler will get a reference to `node` and the root of the tree.
+       *
+       * @param {Object} node Tree node to pass to the handler
+       * @private
+       */
+      trvw.onNodeClick = function(node) {
         ($scope.clickHandler || angular.noop)(node, $scope.root);
       };
 
-      ctrl.onNodeChange = function(node, isSelected) {
+      /**
+       * Call the registered selection change handler
+       *
+       * Handler will get a reference to `node`, the new selected state of
+       * `node, and the root of the tree.
+       *
+       * @param {Object} node Tree node to pass to the handler
+       * @param {Boolean} isSelected Selected state for `node`
+       * @private
+       */
+      trvw.onNodeChange = function(node, isSelected) {
         ($scope.changeHandler || angular.noop)(node, isSelected, $scope.root);
       };
     }],
     link: function(scope, element, attrs) {
-      var opts = scope.ctrl.opts();
+      var opts = scope.trvw.opts();
 
       // Allow opt-in validate on startup
       if(opts.validate) {
@@ -177,8 +341,8 @@ angular.module('ivh.treeview').directive('ivhTreeview', ['ivhTreeviewMgr', funct
     template: [
       '<ul class="ivh-treeview">',
         '<li ng-repeat="child in root | ivhTreeviewAsArray"',
-            'ng-hide="ctrl.hasFilter() && !ctrl.isVisible(child)"',
-            'ng-class="{\'ivh-treeview-node-collapsed\': !ctrl.isExpanded(child) && !ctrl.isLeaf(child)}"',
+            'ng-hide="trvw.hasFilter() && !trvw.isVisible(child)"',
+            'ng-class="{\'ivh-treeview-node-collapsed\': !trvw.isExpanded(child) && !trvw.isLeaf(child)}"',
             'ivh-treeview-node="child"',
             'ivh-treeview-depth="0">',
         '</li>',

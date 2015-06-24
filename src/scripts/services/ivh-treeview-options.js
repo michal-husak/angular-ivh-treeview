@@ -92,8 +92,25 @@ angular.module('ivh.treeview').provider('ivhTreeviewOptions', function() {
     /**
      * Template for leaf twisties (i.e. no children)
      */
-    twistieLeafTpl: 'o'
+    twistieLeafTpl: 'o',
 
+    /**
+     * Template for tree nodes
+     */
+    nodeTpl: [
+      '<div title="{{trvw.label(node)}}">',
+        '<span ivh-treeview-toggle>',
+          '<span ivh-treeview-twistie></span>',
+        '</span>',
+        '<span ng-if="trvw.useCheckboxes()"',
+            'ivh-treeview-checkbox>',
+        '</span>',
+        '<span class="ivh-treeview-node-label" ivh-treeview-toggle>',
+          '{{trvw.label(node)}}',
+        '</span>',
+        '<div ivh-treeview-children></div>',
+      '</div>'
+    ].join('\n')
   };
 
   /**
